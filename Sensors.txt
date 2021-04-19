@@ -1,0 +1,10 @@
+EH Sensors
+
+HSNS - Horizon Sensor for Nanosatellites - SolarMEMS
+CubeIR
+Digital Earth Sensor - Sitael
+MAI-SES - Adcole Maryland
+
+Sun Sensors
+
+SSOC-D60 - SolarMEMS
