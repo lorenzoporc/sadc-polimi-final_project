@@ -158,7 +158,7 @@ orbit.T = 2*pi*sqrt(orbit.a^3/constants.mu);
 
 %% Initial conditions
 
-spacecraft.w0 = deg2rad([10; 5; 3]);
+spacecraft.w0 = deg2rad([0; 0; 0]);
 spacecraft.q0 = [0; 0; 0; 1];
 
 %% Sensors
@@ -167,10 +167,12 @@ sensors = struct();
 
 % Sun sensor: SSOC-D60 - SolarMEMS
 sensors.ss = struct();
-sensors.ss.FoV = deg2rad(120); %[rad]
+sensors.ss.FoV = deg2rad(150); %[rad]
 sensors.ss.sigmaPhi = deg2rad(0.3); %[rad]
 sensors.ss.sigmaTheta = deg2rad(0.3); %[rad]
 sensors.ss.sigmaPsi = deg2rad(0.3); %[rad]
+sensors.ss.sigma = sqrt(sensors.ss.sigmaPhi^2 + sensors.ss.sigmaTheta^2 +...
+    sensors.ss.sigmaPsi^2);
 sensors.ss.Ts = 1/50; %[1/Hz = s]
 sensors.ss.A_sb = [1, 0, 0; 0, 1, 0; 0, 0, 1];
 
@@ -185,16 +187,22 @@ sensors.eh.A_sb = [-1, 0, 0; 0, 1, 0; 0, 0, -1];
 
 % Star tracker: Sagitta star tracker - Arcsec
 sensors.st = struct();
-sensors.st.nStars = 9;
-sensors.st.FoV = [80, 80]; % Elevation and azimuth FoV
+sensors.st.nStars = 4;
+sensors.st.FoV = [20, 20]; % Elevation and azimuth FoV
 sensors.st.sigmaRoll = deg2rad(10*1/3600);
 sensors.st.sigmaCross = deg2rad(2*1/3600);
 sensors.st.sigmaPhi = sensors.st.sigmaCross; %[rad]
 sensors.st.sigmaTheta = sensors.st.sigmaRoll; %[rad]
 sensors.st.sigmaPsi = sensors.st.sigmaCross; %[rad]
+sensors.st.sigma = sqrt(sensors.st.sigmaPhi^2 + sensors.st.sigmaTheta^2 +...
+    sensors.st.sigmaPsi^2);
 sensors.st.Ts = 1/10; %[1/Hz = s]
-sensors.st.A_sb = [1, 0, 0; 0, 1, 0; 0, 0, 1];
-sensors.st.vStars_n_init = 0.2*rand(3,sensors.st.nStars);
+sensors.st.A_sb = [0, 1, 0; -1, 0, 0; 0, 0, 1];
+
+v = rand(3,sensors.st.nStars);
+vn = vecnorm(v);
+
+sensors.st.vStars_n_init = v./vn;
 
 %% Clear variables
 
