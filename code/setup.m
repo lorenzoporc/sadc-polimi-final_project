@@ -42,7 +42,7 @@ spacecraft.rCoM_cubes = [[1*constants.U; 0; 0.5*constants.U],...
     [-1*constants.U; 0; -0.5*constants.U]];
 
 %Solar panels
-%Centers of mass (w.r.t geometrical centre of the 6constants.U bus alone)
+%Centers of mass (w.r.t geometrical centre of the 6U bus alone)
 spacecraft.nPanels = 2;
 spacecraft.panelLength = 3.2*constants.U;
 spacecraft.panelWidth = 2*constants.U;
@@ -178,15 +178,6 @@ sensors.ss.sigma = rad2deg(sqrt(sensors.ss.sigmaPhi^2 + sensors.ss.sigmaTheta^2 
 sensors.ss.Ts = 1/50; %[1/Hz = s]
 sensors.ss.A_sb = [1, 0, 0; 0, 1, 0; 0, 0, 1];
 
-% Earth Horizon (Nadir Vector) sensor: HSNS (Horizon Sensor for Nano
-% Satellites) - SolarMEMS
-% sensors.eh = struct();
-% sensors.eh.sigmaPhi = deg2rad(1); %[rad]
-% sensors.eh.sigmaTheta = deg2rad(1); %[rad]
-% sensors.eh.sigmaPsi = deg2rad(1); %[rad]
-% sensors.eh.Ts = 1/10; %[1/Hz = s]
-% sensors.eh.A_sb = [-1, 0, 0; 0, 1, 0; 0, 0, -1];
-
 % Star tracker: Sagitta star tracker - Arcsec
 sensors.st = struct();
 sensors.st.nStars = 4;
@@ -212,6 +203,33 @@ sensors.mm.sigmaPsi = deg2rad(1); %[rad]
 sensors.mm.eps = 16e-9; %[nT]
 sensors.mm.Ts = 1/18; %[1/Hz = s]
 
+%% Actuators
+
+actuators = struct();
+
+% Magnetorquer: 
+actuators.mt = struct();
+
+% Reaction wheels: SatBus 4RW0 - NanoAvionics
+actuators.rw = struct();
+actuators.rw.A = 1/sqrt(3)*[-1, 1, 1, -1;...
+    -1, -1, 1, 1;...
+    1, 1, 1, 1];
+actuators.rw.A_star = sqrt(3)/4*[-1, -1, 1;...
+    1, -1, 1;...
+    1, 1, 1;...
+    -1, 1, 1];
+actuators.rw.M_max = [5.9e-6, 5.9e-6, 5e-6]; %[Nm]
+actuators.rw.h_max = [37e-6, 37e-6, 31.3e6]; %[Nms]
+
+%% Observer
+
+observer = struct();
+observer.Lw = 0.1;
+observer.Ld = 5e-5;
+observer.estMd0 = [0; 0; 0];
+
 %% Clear variables
 
-clearvars -except constants spacecraft surfaces orbit sensors
+clearvars -except constants spacecraft surfaces orbit...
+    sensors actuators observer
