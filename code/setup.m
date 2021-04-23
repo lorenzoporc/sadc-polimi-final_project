@@ -3,6 +3,8 @@ clc
 clear
 close all
 
+addpath(genpath('simulink'));
+
 % Setup for the plots:
 set(0, 'defaultTextInterpreter','latex','defaultAxesFontSize', 15);
 set(0, 'defaultAxesTickLabelInterpreter','latex');
@@ -63,7 +65,7 @@ spacecraft.rCoM_panels = spacecraft.rCoM_panels - spacecraft.rCoM;
 
 %% Satellite plot
 
-plotLogic = true;
+plotLogic = false;
 
 if plotLogic
     figure(1)
@@ -171,19 +173,19 @@ sensors.ss.FoV = deg2rad(150); %[rad]
 sensors.ss.sigmaPhi = deg2rad(0.3); %[rad]
 sensors.ss.sigmaTheta = deg2rad(0.3); %[rad]
 sensors.ss.sigmaPsi = deg2rad(0.3); %[rad]
-sensors.ss.sigma = sqrt(sensors.ss.sigmaPhi^2 + sensors.ss.sigmaTheta^2 +...
-    sensors.ss.sigmaPsi^2);
+sensors.ss.sigma = rad2deg(sqrt(sensors.ss.sigmaPhi^2 + sensors.ss.sigmaTheta^2 +...
+    sensors.ss.sigmaPsi^2))*60; %[arcmin]
 sensors.ss.Ts = 1/50; %[1/Hz = s]
 sensors.ss.A_sb = [1, 0, 0; 0, 1, 0; 0, 0, 1];
 
 % Earth Horizon (Nadir Vector) sensor: HSNS (Horizon Sensor for Nano
 % Satellites) - SolarMEMS
-sensors.eh = struct();
-sensors.eh.sigmaPhi = deg2rad(1); %[rad]
-sensors.eh.sigmaTheta = deg2rad(1); %[rad]
-sensors.eh.sigmaPsi = deg2rad(1); %[rad]
-sensors.eh.Ts = 1/10; %[1/Hz = s]
-sensors.eh.A_sb = [-1, 0, 0; 0, 1, 0; 0, 0, -1];
+% sensors.eh = struct();
+% sensors.eh.sigmaPhi = deg2rad(1); %[rad]
+% sensors.eh.sigmaTheta = deg2rad(1); %[rad]
+% sensors.eh.sigmaPsi = deg2rad(1); %[rad]
+% sensors.eh.Ts = 1/10; %[1/Hz = s]
+% sensors.eh.A_sb = [-1, 0, 0; 0, 1, 0; 0, 0, -1];
 
 % Star tracker: Sagitta star tracker - Arcsec
 sensors.st = struct();
@@ -194,15 +196,21 @@ sensors.st.sigmaCross = deg2rad(2*1/3600);
 sensors.st.sigmaPhi = sensors.st.sigmaCross; %[rad]
 sensors.st.sigmaTheta = sensors.st.sigmaRoll; %[rad]
 sensors.st.sigmaPsi = sensors.st.sigmaCross; %[rad]
-sensors.st.sigma = sqrt(sensors.st.sigmaPhi^2 + sensors.st.sigmaTheta^2 +...
-    sensors.st.sigmaPsi^2);
+sensors.st.sigma = rad2deg(sqrt(sensors.st.sigmaPhi^2 + sensors.st.sigmaTheta^2 +...
+    sensors.st.sigmaPsi^2))*60; %[arcmin]
 sensors.st.Ts = 1/10; %[1/Hz = s]
 sensors.st.A_sb = [0, 1, 0; -1, 0, 0; 0, 0, 1];
-
 v = rand(3,sensors.st.nStars);
 vn = vecnorm(v);
-
 sensors.st.vStars_n_init = v./vn;
+
+% Magnetometer: NSS Magnetometer - New Space Systems
+sensors.mm = struct();
+sensors.mm.sigmaPhi = deg2rad(1); %[rad]
+sensors.mm.sigmaTheta = deg2rad(1); %[rad]
+sensors.mm.sigmaPsi = deg2rad(1); %[rad]
+sensors.mm.eps = 16e-9; %[nT]
+sensors.mm.Ts = 1/18; %[1/Hz = s]
 
 %% Clear variables
 
