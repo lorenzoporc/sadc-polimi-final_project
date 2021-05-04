@@ -100,7 +100,7 @@ end
 spacecraft.I = I;
 spacecraft.invI = inv(I);
 
-%% Normal to the surfaces
+%% Normal unit vectors (with respect to the surfaces)
 
 nx = [1; 0; 0];
 ny = [0; 1; 0];
@@ -142,7 +142,7 @@ surfaces.rhoD = [rhoD_body*ones(surfaces.num(1),1);...
 
 %% Magnetic properties
 
-spacecraft.resDip = [0.01; 0.01; 0.01]; %[A/m^2]
+spacecraft.resDip = [0.02; 0.02; 0.01]; %[A/m^2]
 
 %% Orbit setup (RaInCube satellite, NORAD 43548, TLE @ 23/12/2020)
 
@@ -156,11 +156,12 @@ orbit.i = deg2rad(51.6133);
 orbit.OM = deg2rad(23.4318);
 orbit.om = deg2rad(43.8993);
 orbit.theta0 = 0;
-orbit.T = 2*pi*sqrt(orbit.a^3/constants.mu);
+orbit.n = sqrt(constants.mu/orbit.a^3);
+orbit.T =  2*pi/orbit.n;
 
 %% Initial conditions
 
-spacecraft.w0 = deg2rad([0; 0; 0]);
+spacecraft.w0 = deg2rad([10; 8; 5]);
 spacecraft.q0 = [0; 0; 0; 1];
 
 %% Sensors
@@ -207,8 +208,10 @@ sensors.mm.Ts = 1/18; %[1/Hz = s]
 
 actuators = struct();
 
-% Magnetorquer: 
+% Magnetorquer: NanoTorque GST-600 - GomSpace
 actuators.mt = struct();
+actuators.mt.D_max = 3/2.*[0.310; 0.310; 0.340]; %[A/m^2]
+actuators.mt.D_min = [0.300; 0.300; 0.300];  % [A/m^2]
 
 % Reaction wheels: SatBus 4RW0 - NanoAvionics
 actuators.rw = struct();
@@ -219,17 +222,38 @@ actuators.rw.A_star = sqrt(3)/4*[-1, -1, 1;...
     1, -1, 1;...
     1, 1, 1;...
     -1, 1, 1];
-actuators.rw.M_max = [5.9e-6, 5.9e-6, 5e-6]; %[Nm]
-actuators.rw.h_max = [37e-6, 37e-6, 31.3e6]; %[Nms]
+actuators.rw.M_max = ones(4,1)*3.2e-3; %[Nm]
+actuators.rw.h_max = ones(4,1)*20e-3; %[Nms]
+actuators.rw.hr0 = [0; 0; 0; 0];
 
-%% Observer
+%% Extended State Observer
 
 observer = struct();
 observer.Lw = 0.1;
 observer.Ld = 5e-5;
 observer.estMd0 = [0; 0; 0];
 
+%% Control
+control = struct();
+
+control.detumbling = struct();
+control.detumbling.kb = 1e5;
+control.detumbling.kp = 5e-4;
+control.detumbling.stopSRD = 2*orbit.T;
+control.detumbling.stop = 3*orbit.T;
+
+control.slew = struct();
+control.slew.nonLinear = 1;
+control.slew.kp = [1; 1; 1];
+control.slew.kd = [1; 1; 1];
+control.slew.kw = 0.1;
+control.slew.kq = 0.1;
+control.slew.stop = 5*orbit.T;
+
+control.pointing = struct();
+control.pointing.type = 'lqr';
+
 %% Clear variables
 
 clearvars -except constants spacecraft surfaces orbit...
-    sensors actuators observer
+    sensors actuators observer control

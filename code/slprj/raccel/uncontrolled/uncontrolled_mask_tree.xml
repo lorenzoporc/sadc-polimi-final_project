@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MF0 version="1.1" packageUris="http://schema.mathworks.com/mf0/slsa_mm/R2020a">
+  <slsa.mm.MaskTree type="slsa.mm.MaskTree" uuid="523da9c4-dd2e-42da-89fe-e51af4728700">
+    <maskedBlocks type="slsa.mm.MaskedBlock" uuid="83ece9d1-bdae-401d-ac87-df76fc15d316">
+      <childrenIds>uncontrolled:51:398</childrenIds>
+      <childrenIds>uncontrolled:51:83</childrenIds>
+      <childrenIds>uncontrolled:52:176</childrenIds>
+      <childrenIds>uncontrolled:53:966</childrenIds>
+      <childrenIds>uncontrolled:54:1184</childrenIds>
+      <id>root</id>
+    </maskedBlocks>
+    <maskedBlocks type="slsa.mm.MaskedBlock" uuid="b829b1f7-2af1-4926-8e5c-05979ea9b981">
+      <blockPath>uncontrolled/Environment/Disturbances/Magnetic torque/Magnetic field versor/Normalize Vector</blockPath>
+      <id>uncontrolled:51:398</id>
+      <masks type="slsa.mm.Mask" uuid="ee049520-4b04-4e14-8c12-b5a8d45438c9">
+        <dialogParameters type="slsa.mm.DialogParameterInfo" uuid="012f9603-971d-4e87-ac5e-4025c00e5265">
+          <evaluate>true</evaluate>
+          <expression>0</expression>
+          <isTunable>true</isTunable>
+          <name>maxzero</name>
+        </dialogParameters>
+        <skipInitializationCode>true</skipInitializationCode>
+      </masks>
+      <parentId>root</parentId>
+    </maskedBlocks>
+    <maskedBlocks type="slsa.mm.MaskedBlock" uuid="6eba8e4a-0d2c-47ed-a828-0e0813319238">
+      <blockPath>uncontrolled/Environment/Disturbances/Solar radiation pressure/If Action Subsystem1/Normalize Vector</blockPath>
+      <id>uncontrolled:51:83</id>
+      <masks type="slsa.mm.Mask" uuid="a177966d-c16d-4228-af9d-9a49da8ac97d">
+        <dialogParameters type="slsa.mm.DialogParameterInfo" uuid="d04b0c45-b30c-43fa-b8a0-28aa000a8cba">
+          <evaluate>true</evaluate>
+          <expression>0</expression>
+          <isTunable>true</isTunable>
+          <name>maxzero</name>
+        </dialogParameters>
+        <skipInitializationCode>true</skipInitializationCode>
+      </masks>
+      <parentId>root</parentId>
+    </maskedBlocks>
+    <maskedBlocks type="slsa.mm.MaskedBlock" uuid="487b43cd-5e91-44a2-adb9-a55733ed534e">
+      <blockPath>uncontrolled/Dynamics + kinematics/Kinematics/Quaternion integration/Normalize Vector</blockPath>
+      <id>uncontrolled:52:176</id>
+      <masks type="slsa.mm.Mask" uuid="fb9c7f40-67c5-412d-8a40-b41b8506ceca">
+        <dialogParameters type="slsa.mm.DialogParameterInfo" uuid="ff448c45-72e7-4bf8-a380-2417767b2e71">
+          <evaluate>true</evaluate>
+          <expression>0</expression>
+          <isTunable>true</isTunable>
+          <name>maxzero</name>
+        </dialogParameters>
+        <skipInitializationCode>true</skipInitializationCode>
+      </masks>
+      <parentId>root</parentId>
+    </maskedBlocks>
+    <maskedBlocks type="slsa.mm.MaskedBlock" uuid="e0126149-8097-40e2-861c-e127d3fa6f2b">
+      <blockPath>uncontrolled/Sensors/Sun sensor FoV/Normalize Vector</blockPath>
+      <id>uncontrolled:53:966</id>
+      <masks type="slsa.mm.Mask" uuid="77bafdcc-e78a-4f69-885c-fe5baefff309">
+        <dialogParameters type="slsa.mm.DialogParameterInfo" uuid="65a28a29-662e-4a45-bbd9-a35c58b709bc">
+          <evaluate>true</evaluate>
+          <expression>0</expression>
+          <isTunable>true</isTunable>
+          <name>maxzero</name>
+        </dialogParameters>
+        <skipInitializationCode>true</skipInitializationCode>
+      </masks>
+      <parentId>root</parentId>
+    </maskedBlocks>
+    <maskedBlocks type="slsa.mm.MaskedBlock" uuid="9d7efe2c-6a22-4831-b50b-d90a9fef5ea7">
+      <blockPath>uncontrolled/Attitude determination/Angular velocity estimation/Varying Lowpass Filter</blockPath>
+      <id>uncontrolled:54:1184</id>
+      <masks type="slsa.mm.Mask" uuid="4af01afb-84e5-4766-abaa-b2e3452243e7">
+        <dialogParameters type="slsa.mm.DialogParameterInfo" uuid="dbc64629-e438-4868-80d6-348c5af1b406">
+          <evaluate>true</evaluate>
+          <expression>1</expression>
+          <name>N</name>
+        </dialogParameters>
+        <initializationCode>if N~=round(N)
+   hCB = get_param(gcb,&apos;handle&apos;);
+   DAStudio.slerror(&apos;Control:simulink:InvalidOrder&apos;,hCB)
+end
+SimStatus = get_param(bdroot,&apos;SimulationStatus&apos;);
+if any(strcmp(SimStatus,{&apos;initializing&apos;,&apos;updating&apos;,&apos;stopped&apos;}))
+   varyingBlockMask(&apos;butterworth&apos;,gcb,N,0)
+end</initializationCode>
+        <skipInitializationCode>true</skipInitializationCode>
+      </masks>
+      <parentId>root</parentId>
+    </maskedBlocks>
+    <flags type="slsa.mm.MaskTreeFlags" uuid="a89f428d-2ae6-4ba1-b84a-3150496fee3c"/>
+  </slsa.mm.MaskTree>
+</MF0>
