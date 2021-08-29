@@ -12,14 +12,14 @@
 *.mltbx
 
 # Generated helpsearch folders
-**/helpsearch*/
+helpsearch*/
 
 # Simulink code generation folders
-**/slprj/
-**/sccprj/
+slprj/
+sccprj/
 
 # Matlab code generation folders
-**/codegen/
+codegen/
 
 # Simulink autosave extension
 *.autosave
