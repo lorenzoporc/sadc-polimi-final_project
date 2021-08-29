@@ -1,0 +1,8 @@
+A block diagram of the simulation framework is reported in \cref{fig:framework}. The graph highlights the interconnections between the various blocks which are used to simulate the dynamics of the spacecraft and of the ADCS system. This model is implemented in Simulink and integrated using the built-in \mcode{ode45} function, with \mcode{RelTol} and \mcode{AbsTol} equal to $10^{-8}$.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{graphics/framework.pdf}
+    \caption{Simulation framework}
+    \label{fig:framework}
+\end{figure}

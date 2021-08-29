@@ -1,0 +1,85 @@
+As already stated in \cref{sec:introduction}, the mission profile considered for the design of the control logic and for the following simulations is split into three phases:
+
+\begin{enumerate}
+    \item \textbf{uncontrolled}: in this phase the spacecraft is not controlled, as it is assumed that the ADCS system is not fully operational yet. The simulation is useful to analyze the disturbances acting on the satellite.
+    \item \textbf{detumbling}: the aim of this phase is to reduce the angular velocity of the satellite as close to zero as possible.
+    \item \textbf{tracking}: in this phase, the goal is to constantly point the radar antenna of the satellite (placed in its bottom side, opposite to the solar panels) towards the centre of the Earth. This condition is verified when the $x$-axis of the satellite body frame is aligned with the $1^{st}$ axis of the LVLH frame, which is parallel to the orbit radial direction. The performance parameter which describes the precision in the tracking is the pointing error $p$, defined as the angle between the two directions:
+    
+    \begin{equation}
+        p = \arccos\,(\hat{\mathbf{x}}_b^T\, \hat{\mathbf{x}}_l) = \arccos \left( 
+        \begin{bmatrix}
+        1 & 0 & 0
+        \end{bmatrix}
+        \, A_{b/n}\, A_{l/n}^T \begin{bmatrix}
+        1 \\
+        0 \\
+        0 
+        \end{bmatrix}
+        \right) = \arccos\,(A_{b,l \; 1,1})
+    \end{equation}
+\end{enumerate}
+
+For mission purposes, the pointing error shall be kept under $2^{\circ}$.
+
+\subsection{Detumbling control}
+
+For the detumbling phase two control strategies are implemented and compared:
+
+\begin{enumerate}
+    \item a \textbf{spin rate damping} (\textit{SRD}) control law, in which only the magnetorquer is employed.
+    \item a \textbf{proportional} control law using the set of reaction wheels.
+\end{enumerate}
+
+Both controls are expected to last 3 orbital periods, equal to $\approx 4.63$ hours. For the \textbf{first strategy}, the analytical expression of the ideal control dipole is $\mathbf{D}^{id} = - k_b\, \Dot{\mathbf{b}}_b$. The derivative of the magnetic field in the body frame is approximated assuming that the time variations are only due to the rotation of the satellite, hence $\dot{\mathbf{b}}_b \approx - \bm{\omega} \times \mathbf{b}_b$. Considering that the magnetorquer relies on measurements and estimations coming from the attitude determination system, the ideal commanded dipole would be $\mathbf{D}^{id} = k_b \, \Bar{\bm{\omega}} \times \Tilde{\mathbf{b}}_b$. The ideal control moment that the magnetorquer should provide is:
+
+\begin{equation}
+    \mathbf{M}_c^{id} = k_b \,(\bar{\bm{\omega}} \times \tilde{\mathbf{b}}_b)\, \times \bar{\mathbf{b}}_b - \bar{\mathbf{M}}_d \text{ with } k_b = 10^5
+\end{equation}
+
+The term $\bar{\mathbf{M}}_d$ is added for the motivations reported in \cref{sec:ESO}. As the control moment can only be perpendicular to the magnetic field, a possible strategy is to generate a real dipole (depending on the $\mathbf{M}_c^{id}$) always normal to $\mathbf{b}_b$. This would be theoretically possible with the exact knowledge of the magnetic field; in this case, it is possible to rely on the magnetometer measurements. The expression of the real commanded dipole is then:
+
+\begin{equation}
+    \bar{\mathbf{D}} = \frac{\tilde{\mathbf{b}}_b \times \mathbf{M}_c^{id}}{\| \tilde{\mathbf{b}}_b \|^2}
+\end{equation}
+
+The effective control torque provided by magnetorquer and its estimation (required for the ESO) will have the following expressions:
+
+\begin{equation}
+    \mathbf{M}_c = \frac{1}{\|\Tilde{\mathbf{b}_b^2}\|} \left( \Tilde{\mathbf{b}}_b \times \mathbf{M}_c^{id} \right) \times \mathbf{b}_b , \qquad \bar{\mathbf{M}}_c = \frac{1}{\|\Tilde{\mathbf{b}_b^2}\|} \left( \Tilde{\mathbf{b}}_b \times \mathbf{M}_c^{id} \right) \times \Tilde{\mathbf{b}}_b
+\end{equation}
+
+In the \textbf{second strategy}, the ideal control torque which shall be provided by the reaction wheels is:
+
+\begin{equation}
+    \mathbf{M}_c^{id} = - k_p \bar{\bm{\omega}} - \bar{\mathbf{M}}_d \qquad \text{ with } k_p = 10^{-3}
+\end{equation}
+
+The real torque exerted on the spacecraft $\mathbf{M}_c$ is computed propagating \cref{eq:RW_hr,eq:RW_M}. The estimation $\bar{\mathbf{M}_c}$ can be derived from the same equations by considering the estimated angular velocity $\bar{\bm{\omega}}$ instead of the actual one.
+
+\subsection{Tracking control}
+
+The tracking phase starts right after the end of the detumbling control. This phase is simulated for 3 orbital periods, equal to $\approx 4.63$ hours. The spacecraft performs a slew motion at first in order to re-orient itself in the correct direction and at the correct angular velocity. The control system shall then be able to constantly track the Nadir direction, described by the $1^{st}$ axis of the LVLH frame. The desired angular velocity and direction cosines matrix are defined then as:
+
+\begin{equation}
+    \bm{\omega}_d = \begin{bmatrix}
+    0 & 0 & \dot{\theta}
+    \end{bmatrix}^T, \qquad
+    A_d = A_{l/n}
+\end{equation}
+
+$\dot{\theta}$ is known from orbital dynamics. The error angular speed and the error DCM are defined as:
+
+\begin{equation}
+    \bm{\omega}_e = \bar{\bm{\omega}} - A_e\,\bm{\omega}_d , \qquad A_e = \bar{A}_{b/n}\,A_d^T
+\end{equation}
+
+A non-linear control law is implemented and allocated to the reaction wheels through \cref{eq:RW_hr,eq:RW_M}. It is derived using a Lyapounov function \cite{biggs}:
+
+\begin{equation}
+    \mathbf{M}_c^{id} = - k_{\omega} \bm{\omega}_e - k_{A_e}[A_e^T - A_e]^V + \bar{\omega} \times I \bar{\omega} - \bar{\mathbf{M}}_d \qquad \text{with: } k_{\omega} = 10^{-3}, \, k_{A_e} = 10^{-3}
+\end{equation}
+
+with:
+\begin{equation}
+    [A_e^T - A_e]^V = [A_{e\,2,3} - A_{e\,3,2}, \, A_{e\,3,1} - A_{e\,1,3}, \, A_{e\,1,2} - A_{e\,2,1}]^T
+\end{equation}

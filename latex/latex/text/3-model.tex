@@ -1,0 +1,316 @@
+\subsection{Orbital dynamics}
+
+The orbital dynamics of the satellite is modeled as an unperturbed two body problem, considering the Earth as the primary body. The perturbations are included only in the rotational dynamics of the spacecraft. The reference orbit is taken from the last update for RainCube's TLE \cite{raincube_orbit}, whose first five Keplerian elements were:
+
+\begin{table}[h!]
+    \centering
+    \caption{Keplerian elements of the orbit}
+    \begin{tabular}{ccccc}
+    \toprule
+    \toprule
+    \textbf{Semi-major axis} $a$ & \textbf{Eccentricity} $e$ & \textbf{Inclination} $i$ & \textbf{RAAN} $\Omega$ & \textbf{Argument of perigee} $\omega$ \\
+    \midrule
+    6779.4 km &  1.98 $\cdot10^{-4}$ & 51.6$^{\circ}$ & 23.4$^{\circ}$ & 43.9$^{\circ}$ \\
+    \bottomrule
+    \bottomrule
+    \end{tabular}
+    \label{tab:keplerian_elements}
+\end{table}
+
+As the dynamics is unperturbed, the only varying element is the true anomaly $\theta$, whose evolution in time is given by the equation:
+
+\begin{equation}
+    \dot{\theta} = \sqrt{\frac{\mu_{\Earth}}{a^3}} \frac{(1 + e\,\cos \theta)^2}{(1 - e^2)^{3/2}}
+\end{equation}
+
+where $\mu_{\Earth}$ is the gravitational parameter of the Earth, equal to $398600\,km^3/s^2$. The integration of the true anomaly allows for the computation of the position and the velocity of the spacecraft in the Earth Centered Inertial (\textit{ECI}) frame (respectively $\mathbf{r}_{S/C}$ and $\mathbf{v}_{S/C}$) at any time. These vectors are required in order to derive the disturbing torques acting on the spacecraft. The variation of the true anomaly also entails the time variation of the rotation matrix from the Local Horizontal Local Vertical (\textit{LVLH}) frame to the inertial frame $A_{l/n}$ (\cref{eq:A_ln}). This element is necessary for the design of the control in the tracking phase. Uncertainties on $\mathbf{r}_{S/C}$, $\mathbf{v}_{S/C}$ and $A_{l/n}$ are neglected.
+
+\begin{equation}
+    A_{l/n} = \begin{bmatrix} \cos \theta & \sin \theta & 0 \\
+    - \sin \theta & \cos \theta & 0 \\
+    0 & 0 & 1
+    \end{bmatrix}
+    \begin{bmatrix}
+    1 & 0 & 0 \\
+    0 & \cos i & \sin i \\
+    0 & - \sin i & \cos i \\
+    \end{bmatrix}
+    \label{eq:A_ln}
+\end{equation}
+
+The direction of the Sun in the ECI, which will be needed for the simulation of the disturbances and for the Sun sensor, is computed considering the orbit of the Earth as circular (with radius equal to $1 \, AU$):
+
+\begin{equation}
+    \hat{\mathbf{R}}_{\Sun,n} = \begin{bmatrix}
+    \cos (n_{\Sun} t) \\
+    \sin (n_{\Sun} t) \cos \epsilon \\
+    \sin (n_{\Sun} t) \sin \epsilon
+    \end{bmatrix}
+\end{equation}
+
+where $n_{\Sun} = 2 \pi / 1\,year$ is the apparent mean motion of the Sun and $\epsilon = 23.45^{\circ}$ is the obliquity angle.
+
+\subsection{Rotational dynamics and kinematics}
+
+The spacecraft is modeled as a rigid body, so its rotational dynamics can be described through Euler's equations:
+
+\begin{equation}
+    I \frac{\mathrm{d} \bm{\omega}}{\mathrm{d} t} = I \bm{\omega} \times \bm{\omega} + \mathbf{M}_d + \mathbf{M}_c
+    \label{eq:euler}
+\end{equation}
+
+where $\bm{\omega} = [\omega_x,\, \omega_y,\, \omega_z]^T$ is the angular velocity of the satellite, $\mathbf{M}_d$ is the disturbing torque and $\mathbf{M}_c$ is the control torque. Every quantity is expressed in the satellite's body frame. All the terms contributing to the disturbing torque will be presented in \cref{sec:disturbances}, while the control torque will be the target of the design in \cref{sec:control}. 
+
+The numerical integration of \cref{eq:euler} returns the value of the angular velocity, which can subsequently be used to propagate the attitude kinematics of the satellite. The chosen attitude parameter, which describes the orientation of the body frame with respect to the inertial frame, is the quaternion $q$, whose time evolution is described by the following differential equation:
+
+\begin{equation}
+    \dot{q} = \frac{1}{2} \begin{bmatrix}
+    0 & \omega_z & - \omega_y & \omega_x \\
+    - \omega_z & 0 & \omega_x & \omega_y \\
+    \omega_y & - \omega_x & 0 & \omega_z \\
+    - \omega_x & - \omega_y & -\omega_z & 0
+    \end{bmatrix} q = \frac{1}{2} \Omega q
+\end{equation}
+
+$q$ is normalized at each integration step in order to preserve its property of having unitary magnitude. From the knowledge of $q$, the direction cosine matrix (\textit{DCM}) of the body frame is derived as:
+
+\begin{equation}
+    A_{b/n} = (q_4 - \mathbf{q}^T \mathbf{q})\,\mathbb{I}_3 + 2 \mathbf{q} \mathbf{q}^T - 2 q_4 [q \wedge]
+    \label{eq:dcm}
+\end{equation}
+
+$\mathbf{q}$ is the vector part of the quaternion and $q_4$ is its scalar part, such that $q = [\mathbf{q}, \, q_4]^T$. The $[\cdot \wedge]$ symbol stands for the cross product matrix operator.
+
+\subsection{External disturbances} \label{sec:disturbances}
+
+The total disturbing torque $\mathbf{M}_d$ is made up of four contributions: $\mathbf{M}_{\mathbf{b}}$ from the interaction with the magnetic field, $\mathbf{M}_{GG}$ from the gravity gradient, $\mathbf{M}_{drag}$ from atmospheric drag and $\mathbf{M}_{SRP}$ from solar radiation pressure.
+
+\subsubsection{Earth's magnetic field}
+
+The Earth's magnetic field at the spacecraft position is simulated using a simple dipole model, derived from the first order expansion of the spherical harmonic potential.
+
+\begin{equation}
+    \mathbf{b}_n = \frac{R_{\Earth}^3 H_0}{\| \mathbf{r}_{S/C} \|^3}\,[3\,(\hat{\mathbf{m}} \cdot \hat{\mathbf{r}}) \, \hat{\mathbf{r}} - \hat{\mathbf{m}}], \text{ where } H_0 = \sqrt{(g_1^0)^2 + (g_1^1)^2 + (h_1^1)^2}
+\end{equation}
+
+The term $H_0$ is computed from the first order Gaussian coefficients of the International Geomagnetic Reference Field (\textit{IGRF}) 2000 \cite{igrf}. $R_{\Earth}$ is Earth's equatorial radius (equal to 6378.1 $km$), $\hat{\mathbf{r}}$ is the unit vector in the direction of $\mathbf{r}_{S/C}$, and $\hat{\mathbf{m}}$ is the direction of the magnetic dipole:
+
+\begin{equation}
+    \hat{\mathbf{m}} = \begin{bmatrix}
+    \sin (11.5^{\circ})\, \cos (\omega_{\Earth} t) \\
+    \sin (11.5^{\circ})\, \sin (\omega_{\Earth} t) \\
+    \cos (11.5^{\circ})
+    \end{bmatrix}
+\end{equation}
+
+$\omega_{\Earth}$ is the angular speed of Earth's rotation in inertial space (equal to $7.29 \cdot 10^{-5}\, rad/s$). The torque acting on the satellite can be finally computed as:
+
+\begin{equation}
+    \mathbf{M}_{\mathbf{b}} = \mathbf{D}_r \times \mathbf{b}_b = \mathbf{D}_r \times (A_{b/n} \mathbf{b}_n )
+\end{equation}
+
+where $\mathbf{D}_r$ is the residual magnetic dipole of the spacecraft, assumed to be $[0.01, \, 0.01, \, 0.01]^T \, A/m^2$.
+
+\subsubsection{Gravity gradient torque}
+
+The torque coming from the non uniform gravity field acting on the spacecraft can be determined as:
+
+\begin{equation}
+    \mathbf{M}_{GG} = \frac{3 \mu_{\Earth}}{\| \mathbf{r}_{S/C} \|^3} \begin{bmatrix}
+    (I_z - I_y)\, c_2\,c_3 \\
+    (I_x - I_z)\, c_1\,c_3 \\
+    (I_y - I_x)\, c_1\,c_2
+    \end{bmatrix}
+    \label{eq:gravity-gradient}
+\end{equation}
+
+This expression hold as long as $I$ is a diagonal matrix, such that $I = \text{diag}\,(I_x,\,I_y,\,I_z)$. The terms $c_1,\,c_2,\,c_3$ are computed as:
+
+\begin{equation}
+    \begin{bmatrix}
+    c_1 \\
+    c_2 \\
+    c_3 
+    \end{bmatrix}
+    = A_{l/n} A_{b/n}^T
+    \begin{bmatrix}
+    1 \\
+    0 \\
+    0
+    \end{bmatrix}
+    = A_{b/l}
+    \begin{bmatrix}
+    1 \\
+    0 \\
+    0
+    \end{bmatrix}
+\end{equation}
+
+\subsubsection{Atmospheric drag} \label{sec:drag}
+
+The torque due to the aerodynamic interaction of the satellite with the atmosphere is computed dividing the body into $M$ planar surfaces with area $A_i$, each one identified by its normal unit vector $\hat{\mathbf{n}}_{b,i}$ in the body frame. For each surface $i$, the drag force can be computed as:
+
+\begin{equation}
+    \mathbf{F}_{drag,i} = 
+    \begin{cases}
+    - \frac{1}{2} \rho\,c_D \, A_{i} \, \| \mathbf{v}_{rel,b,i} \|^2 \, \left( \hat{\mathbf{n}}_{b,i} \cdot \frac{\mathbf{v}_{rel,b,i}}{\| \mathbf{v}_{rel,b,i} \|} \right) & \text{if } \hat{\mathbf{n}}_{b,i} \cdot \frac{\mathbf{v}_{rel,b,i}}{\| \mathbf{v}_{rel,b,i} \|} > 0 \\
+    0 & \text{otherwise} \\
+    \end{cases}
+\end{equation}
+
+
+The velocities in the body frame $\mathbf{v}_{rel,b,i} = A_{b,n}\, \mathbf{v}_{rel,n,i}$ depend on the relative velocity between each surface and the rotating atmosphere in the inertial frame. Using Rivals' theorem:
+
+\begin{equation}
+\mathbf{v}_{rel,n,i} = (\mathbf{v}_{S/C} + \bm{\omega} \times \mathbf{r}_{b,i}) - \bm{\omega}_{\Earth} \times \mathbf{r}_{S/C}    
+\end{equation}
+
+with $\bm{\omega}_{\Earth}$ being the angular velocity vector of the Earth. The vectors $\mathbf{r}_{b,i}$ represent the positions of the geometrical centres of the surfaces with respect to the centre of gravity of the spacecraft in the body frame. The term due to the rotation of the spacecraft $\bm{\omega} \times \mathbf{r}_{b,i}$ is negligible for low angular velocities, thus it is assumed that the relative velocity of each surface is equal to the one of the centre of gravity, such that $\textbf{v}_{rel,b,i} \approx \mathbf{v}_{rel,b} = \mathbf{v}_{S/C} - \bm{\omega}_{\Earth} \times \mathbf{r}_{S/C}$. The density $\rho$ is considered constant and equal to $3.725 \cdot 10^{-12}\, kg/m^3$, according to the \textit{CIRA72} model \cite{cira72} at a reference height of $400\,km$ (the altitude of the nominal orbit varies between 400 $km$ and 402.69 $km$). The drag coefficient $c_D$ is assumed to be equal to 2.2 for all surfaces and all attitudes. This value is typical for flat plates in rarefied gases.
+
+Assuming the centres of pressure to be equal to the geometrical centre of each surface, the total torque due to drag is computed as:
+
+\begin{equation}
+    \mathbf{M}_{drag} = \sum_{i=1}^K \mathbf{r}_{b,i} \times \mathbf{F}_{drag,i}
+\end{equation}
+
+This model for aerodynamic drag does not take into account more complex phenomena such as flow separation.
+
+\subsubsection{Solar radiation pressure (SRP)} \label{sec:SRP}
+
+The modeling of the torque due to solar radiation pressure follows a strategy similar to the one presented in \cref{sec:drag}. The spacecraft is discretized into $M$ planar surfaces, each one of which feels an acting force equal to:
+
+\begin{equation}
+    \mathbf{F}_{SRP,i} = 
+    \begin{cases}
+        - \frac{F_e}{c}\, A_i \, \left( \hat{\mathbf{S}}_b \cdot \hat{\mathbf{n}}_{b,i} \right) \bigg\{ (1 - \rho_{s,i})\, \hat{\mathbf{S}}_b + \left[ 2 \rho_{s,i} \, \hat{\mathbf{S}}_b \cdot \hat{\mathbf{n}}_{b,i} + \frac{2}{3} \rho_{d,i} \right] \cdot \hat{\mathbf{n}}_{b,i} \bigg\} & \text{if } \hat{\mathbf{S}}_b \cdot \hat{\mathbf{n}}_{b,i} > 0 \\
+        0 & \text{otherwise} \\
+    \end{cases}
+\end{equation}
+
+$c$ is the speed of light and $F_e$ is the power density associated to the IR + visible electromagnetic radiation hitting the spacecraft, made up of three contributions: direct solar radiation, Earth's albedo and Earth's IR radiation. Its value is taken equal to $F_e = 1358 + 580 + 143.3 \, W/m^2 = 2081.3 \, W/m^2$. The unit vector $\hat{\mathbf{S}}_b = A_{b,n} \hat{\mathbf{S}}_n = A_{b,n} \,(\hat{\mathbf{R}}_{\Sun,n} - \hat{\mathbf{r}}) $ represents the position of the Sun with respect to the s/c in the body frame. The terms $\rho_{s,i}$ quantify the phenomenon of the specular reflection, and are set to 0.5 for the body surfaces and to 0.8 for the solar panels. $\rho_{d,i}$ are the diffusive reflection coefficients, equal to 0.1 for all surfaces. Finally, the total torque due to SRP is computed as:
+
+\begin{equation}
+    \mathbf{M}_{SRP} = \sum_{i=1}^K \mathbf{r}_{b,i} \times \mathbf{F}_{SRP,i}
+\end{equation}
+
+This model does not include phenomena such as shadowing from the solar panels, thus the net simulated torque will be greater than the actual one. The effect of SRP is only considered when the spacecraft does not lie in the shadow cone of the Earth. The latter is determined by simple geometry depending on $\hat{\mathbf{S}}_n$ and $\mathbf{r}_{S/C}$, as explained in \cite{curtis}.
+
+\subsection{Sensors}
+
+The measurements coming from the \textbf{Sun sensor} are modeled by taking into account uncertainties through an error rotation matrix $A_{123}\,(\phi, \theta, \psi)$. The internal dynamics of the sensor is not considered. The terms $\phi,\,\theta,\,\psi$ are randomly generated Euler angles from a Gaussian distribution with zero mean value and standard deviation equal to the accuracy reported in \cref{tab:sun_sensor}. The measurements will then be simulated from the following equation:
+
+\begin{equation}
+    \Tilde{\mathbf{S}}_b = (A_{s/b}^{SS})^T \cdot A_{123}\,(\phi,\theta,\psi)\, \hat{\mathbf{S}}_s = (A_{s/b}^{SS})^T \cdot A_{123}\,(\phi,\theta,\psi)\, A_{s/b}^{SS} A_{b/n} \hat{\mathbf{S}}_n
+\end{equation}
+
+The eclipse condition (mentioned in \cref{sec:SRP}) and the limited aperture of the optics are taken into account. In fact, it is possible to generate a measurement only when the spacecraft is in sunlight and when the Sun is in the range of visibility of the sensor. This latter condition is verified when the angle between the direction of the star and the bore sight of the sensor (parallel to the $x-$axis of the body frame) is less than half of the angle defining the field of view:
+
+\begin{equation}
+    \begin{bmatrix}
+    1 & 0 & 0
+    \end{bmatrix}^T \cdot \hat{\mathbf{S}}_s = \begin{bmatrix}
+    1 & 0 & 0
+    \end{bmatrix}^T \cdot A_{s/b}^{SS} A_{b/n} \hat{\mathbf{S}}_n < \cos\, \left( \frac{\mathrm{|FoV_{SS}|}}{2} \right)
+\end{equation}
+
+The \textbf{star tracker} is modeled considering the tracking of three or four stars, depending on the light condition (later explained in \cref{sec:attitude_determination}). As for the Sun sensor, the internal dynamics of the sensor is not considered. The model is not based on a star catalogue, but on the generation and tracking of $K$ directions representing $K$ stars. The presence of disturbing celestial bodies such as the Sun or the Moon is not taken into account. The direction of each star is defined by an elevation angle $\delta$ and on an "azimuth-like" angle $\alpha$. The first one represents the angle between the star direction and the bore sight ($1^{st}$ direction in the sensor frame), while the second is the angle defined by the projection of the star onto the horizontal plane of the sensor and the bore sight. 
+
+\begin{equation}
+    \hat{\mathbf{v}}_{s,i} = \begin{bmatrix}
+    \cos \delta_i \cdot \cos \alpha_i \\
+    \cos \delta_i \cdot \sin \alpha_i \\
+    \sin \delta_i
+    \end{bmatrix}
+    \label{eq:star_tracker_vector}
+\end{equation}
+
+The working principle of the tracking system is the following: at the first integration step, a first set of stars is generated. The angles $\delta_i$ and $\alpha_i$ are picked up from a uniform random distribution function bounded in $[-0.2\cdot \mathrm{FoV}_{ST}, 0.2 \cdot \mathrm{FoV}_{ST}]$. The 0.2 factor is added in order to have directions as close as possible to the bore sight. The unit vectors $\hat{\mathbf{v}}_{s,i}$ are then computed through \cref{eq:star_tracker_vector} and rotated to have directions in the inertial frame $n$:
+
+\begin{equation}
+    \hat{\mathbf{v}}_{n,i} = A_{b/n}^T (A_{s/b}^{ST})^T \, \hat{\mathbf{v}}_{s,i}
+\end{equation} 
+
+Uncertainties on the measurements are added through the error rotation matrix $A_{123}\,(\phi,\theta,\psi)$, as done for the Sun sensor, such that $\Tilde{\mathbf{v}}_{s,i} = A_{123}\,(\phi, \theta, \psi)\,\hat{\mathbf{v}}_{s,i}$. The first Euler angle is generated within a Gaussian PDF with null mean value and standard deviation equal to the roll-boresight accuracy, while the last two have standard deviation equal to the cross-boresight accuracy. The measurements are then rotated in the body frame via the matrix $A_{s/b}^{ST}$, thus:
+
+\begin{equation}
+    \Tilde{\mathbf{v}}_{b,i} = (A_{s/b}^{ST})^T\,\Tilde{\mathbf{v}}_{s,i}
+    \label{eq:star_tracker_measurement}
+\end{equation}
+
+At the second integration step, it is verified if the previously generated stars still lie in the field of view of the sensor, so if they can still be tracked. This is done by recomputing $\delta$ and $\alpha$ in the new sensor frame (as the spacecraft has rotated) from the knowledge of their position in the inertial frame $\hat{\mathbf{v}}_{n,i}^{(1)}$ (which was generated in the previous step):
+
+\begin{equation}
+    \hat{\mathbf{v}}_{s,i}^{(2)} = A_{s/b}^{ST} A_{b/n}^{(2)}\, \hat{\mathbf{v}}_{n,i}^{(1)} \rightarrow 
+    \begin{cases}
+        \delta_i^{(2)} = \arcsin\,( \hat{\mathbf{v}}_{s,i}^{(2)} \cdot [0,\, 0,\, 1]^T) \\
+        \alpha_i^{(2)} = \arccos\,( \hat{\mathbf{v}}_{s,i}^{(2)} \cdot [1,\, 0,\, 0]^T / \cos \delta_i^{(2)} )
+    \end{cases}
+\end{equation}
+
+The values for $\delta_i^{(2)}$ and $\alpha_i^{(2)}$ are subsequently corrected in order to transport them in the interval $[-\pi, \pi]$. If the $i$-th star is still in the field of view of the of the star tracker, so if the following conditions are verified:
+
+\begin{equation}
+    | \delta_i^{(2)} |  < \frac{| \mathrm{FoV}_{ST} |}{2} \text{  and  } | \alpha_i^{(2)} | <  \frac{| \mathrm{FoV}_{ST} |}{2}  
+    \label{eq:star_tracker_conditions}
+\end{equation}
+
+then it is possible to continue using the fixed direction $\hat{\mathbf{v}}_{n,i}^{(1)}$ and generate the measurement $\Tilde{\mathbf{v}}_{b,i}^{(2)}$ through the matrix $A_{123}\,(\phi, \theta, \psi)$ and \cref{eq:star_tracker_measurement}. If \cref{eq:star_tracker_conditions} is not verified, then the $i$-th star is regenerated using \cref{eq:star_tracker_vector} and a new measurement is simulated. This process is continuously repeated for each integration step.
+
+The measurements of the \textbf{magnetometer} are modeled considering two types of error: a bias on the three components of the magnetic field and an error due to the non-orthogonality of the axes of the sensor. The first error is a vector $\bm{\epsilon}$ in which each component is generated from a normal distribution centered in zero and having standard deviation equal to the noise level of the sensor (\cref{tab:magnetometer}). The non-orthogonality is introduced through the rotation error matrix $A_{123}\,(\phi, \theta, \psi)$, where the angles are taken from Gaussian distributions as well, with zero mean value and standard deviation equal to the orthogonality value reported in \cref{tab:magnetometer}. Therefore the measured magnetic field is:
+
+\begin{equation}
+    \Tilde{\mathbf{b}}_b = A_{123}\,(\phi, \theta, \psi)\,(\mathbf{b}_b + \bm{\epsilon})
+\end{equation}
+
+\subsection{Actuators}
+
+The \textbf{magnetorquer} can generate a torque based on its magnetic dipole vector $\mathbf{D}$, which is the variable in the control design.
+
+\begin{equation}
+    \mathbf{M}_{MT} = \mathbf{D} \times \mathbf{b}_b
+\end{equation}
+
+The absolute values of the three components of the dipole must not exceed the values reported in \cref{tab:magnetorquer}, thus $| D_i | < D_{i,max}$.
+
+The \textbf{reaction wheels} are momentum exchange devices, so they shall be included in the total angular momentum of the system. Considering the internal dynamics of the wheels and no other actuator, the set of equations describing the rotational dynamics of the spacecraft becomes:
+
+\begin{subequations}
+    \begin{empheq}[left=\empheqlbrace]{align}
+        & \mathbf{h} = I \bm{\omega} + A \mathbf{h}_r \\
+        & I \bm{\omega} + \bm{\omega} \times I \bm{\omega} + A \dot{\mathbf{h}}_r + \bm{\omega} \times A \dot{\mathbf{h}}_r = \mathbf{M}_d \\
+        & I_r \dot{\mathbf{h}}_r = \mathbf{M}_r
+    \end{empheq}
+\end{subequations}
+
+$A$ is a matrix composed by three rows and four columns (as the number of actuators). For the pyramid configuration, $A$ and its pseudo-inverse $A^*$ are:
+
+\begin{equation}
+    A = \frac{1}{\sqrt{3}}
+    \begin{bmatrix}
+    -1 & 1 & 1 & -1\\
+    -1 & -1 & 1 & 1\\
+    1 & 1 & 1 & 1
+    \end{bmatrix}, \quad
+    A^* = \frac{\sqrt{3}}{4}
+    \begin{bmatrix}
+    -1 & -1 & 1 \\
+    1 & -1 & 1 \\
+    1 & 1 & 1 \\
+    -1 & 1 & 1
+    \end{bmatrix}
+\end{equation}
+
+Each column of $A$ represents the direction of the axis of rotation of the $i$-th wheel, having angular momentum equal to $h_{r,i}$ (assumed to be measured exactly by internal sensors). These last values are gathered in the vector $\mathbf{h}_r$, which has therefore four components. The scalar $I_r$ represents the moment of inertia of the single wheels. The vector $\mathbf{M}_r$ has four components and measures the torque applied to each wheel to make them spin. The actual torque delivered by the actuator to the spacecraft will therefore be:
+
+\begin{equation}
+    \mathbf{M}_{RW} = - A \dot{\mathbf{h}}_r - \bm{\omega} \times A \mathbf{h}_r
+    \label{eq:RW_M}
+\end{equation}
+
+$\mathbf{M}_{RW}$ is the target of the control design for this actuator. The dynamics of the wheels can subsequently be propagated through the following differential equation:
+
+\begin{equation}
+    \dot{\mathbf{h}}_r = - A^* [\mathbf{M}_{RW} + \bm{\omega} \times A \mathbf{h}_r] \label{eq:RW_hr}
+\end{equation}
+
+As the spacecraft is not equipped with any de-saturation mechanism, it must be always verified that $| \mathbf{M}_r | < \mathbf{M}_{r,max}$  and $| \mathbf{h}_r | < \mathbf{h}_{r,max}$. The values for $\mathbf{M}_{r,max}$ and $\mathbf{h}_{r,max}$ are reported in \cref{tab:reaction_wheels}.

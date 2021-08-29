@@ -1,0 +1,132 @@
+\documentclass[11.5pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[textwidth = 460pt,top = 80pt, bottom = 80pt]{geometry}
+\usepackage{graphicx}
+\usepackage[justification=default]{subfig} %Manage sub-figures 
+\usepackage[update]{epstopdf}
+\usepackage[labelfont=bf]{caption}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{mathabx}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{mcode}
+\usepackage{titling}
+\usepackage{amssymb}
+\usepackage{mathabx}
+\usepackage{bm}
+\usepackage[leqno,fleqn,intlimits]{empheq}
+
+%Fonts
+%\usepackage{librebaskerville}
+%\usepackage{arev}
+%\usepackage{concmath}
+%\usepackage[lf]{Baskervaldx}
+%\usepackage{librecaslon}
+%\usepackage{gfsartemisia-euler}
+%\usepackage[urw-garamond]{mathdesign}
+%\usepackage{mlmodern}
+
+
+%Bibliography
+
+\usepackage{csquotes}
+\usepackage[sorting=none,%
+sortcites=true,%
+bibencoding=ascii,%
+autopunct=true,%
+hyperref=true,%
+language=auto,%
+%backref=true,%
+url=false,%
+%maxcitenames=10,%
+%minbibnames = 20,%
+maxbibnames = 3,%
+giveninits, 
+natbib = false,
+isbn=false,%
+backend=biber]{biblatex}
+\addbibresource{bibliography.bib}
+
+%Headers and footers
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{SADC: final project}
+\lhead{Lorenzo Porcelli 945295}
+\rfoot{\thepage}
+\lfoot{AY 2020-21 -- Prof. F. Bernelli Zazzera, T.A. A. Colagrossi}
+\renewcommand{\headrulewidth}{1.5pt}
+\renewcommand{\footrulewidth}{1.5pt}
+
+
+\fancypagestyle{empty}{         
+    \fancyhf{}  
+    \renewcommand{\headrulewidth}{0pt}
+    \renewcommand{\footrulewidth}{0pt}
+}
+
+\usepackage[]{hyperref}
+\usepackage{cleveref}
+%%% CREF setup
+\crefname{equation}{Eq.}{Eqs.}
+\crefname{table}{Table}{Tables}
+\crefname{figure}{Fig.}{Figs.}
+
+
+\begin{document}
+
+\input{text/title.tex}
+
+\pagenumbering{roman}
+
+\tableofcontents
+
+\clearpage
+
+\setcounter{page}{1}
+\pagenumbering{arabic}
+
+\section{Introduction} \label{sec:introduction}
+
+\input{text/1-introduction}
+
+\section{Description of the system}
+
+\input{text/2-properties}
+
+\section{Description of the model}
+
+\input{text/3-model}
+
+\section{Attitude determination} \label{sec:attitude_determination}
+
+\input{text/4-att_determination}
+
+\section{Mission overview and design of the control logic} \label{sec:control}
+
+\input{text/5-mission_control}
+
+\section{Simulation framework}
+
+\input{text/6-framework}
+
+\section{Results of the numerical simulation}
+
+\input{text/7-simulation}
+
+\section{Simulation of off-nominal conditions}
+
+\input{text/8-off_nominal}
+
+\section{Conclusions}
+
+\input{text/9-conclusions}
+
+\clearpage
+
+\printbibliography[heading=bibintoc, title = {References}]
+
+\end{document}
